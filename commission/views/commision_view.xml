@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="sale_commision_form_view" model="ir.ui.view">
+            <field name="name">Commission</field>
+            <field name="model">sale.commision</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="percentage"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="sale_commision_tree_view" model="ir.ui.view">
+            <field name="name">Commission</field>
+            <field name="model">sale.commision</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="code"/>
+                    <field name="percentage"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="sale_commision_action" model="ir.actions.act_window">
+            <field name="name">Commission Codes</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">sale.commision</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="commission_menu"
+                  name="Commision Codes"
+                  action="sale_commision_action"
+                  parent="sale.menu_sale_config"
+                  sequence="3"/>
+    </data>
+</odoo>
