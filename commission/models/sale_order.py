@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from odoo import api, models, fields, tools
-
+import time
 
 class SaleAdvancePaymentInv(models.TransientModel):
     _inherit = "sale.advance.payment.inv"
 
     def create_invoices(self):
+        print("Creating INVOCE sale.advance.payment.inv")
         order = self.env['sale.order'].browse(self.env.context.get('active_id'))
         customer_ref = ''
         for line in order.order_line:
@@ -30,6 +31,27 @@ class SaleAdvancePaymentInv(models.TransientModel):
 
         res = super(SaleAdvancePaymentInv, self).create_invoices()
         return res
+    
+    def _prepare_so_line(self, order, analytic_tag_ids, tax_ids, amount):
+        print("_prepare_so_line inherit")
+        context = {'lang': order.partner_id.lang}
+        so_values = {
+            'name': _('Down Payment: %s') % (time.strftime('%m %Y'),),
+            'price_unit': amount,
+            'product_uom_qty': 0.0,
+            'order_id': order.id,
+            'discount': 0.0,
+            'product_uom': self.product_id.uom_id.id,
+            'product_id': self.product_id.id,
+            'analytic_tag_ids': analytic_tag_ids,
+            'tax_id': [(6, 0, tax_ids)],
+            'is_downpayment': True,
+            'sequence': order.order_line and order.order_line[-1].sequence + 1 or 10,
+            'commission_percent': self.commission_percent,
+            'commission_amount': self.commission_amount
+        }
+        del context
+        return so_values
 
 
 class SaleOrderLine(models.Model):
@@ -42,21 +64,21 @@ class SaleOrderLine(models.Model):
 
     @api.depends('product_id', 'order_id.partner_id')
     def get_commission_percent(self):
-
+        commission_obj = None
         for rec in self:
-            rec.commission_percent = 0
-            for child in rec.order_id.partner_id.child_ids:
-                if child.type == 'delivery' and child.commission_id:
-                    rec.commission_percent = child.commission_id.percentage
-                    rec.commision_id = child.commission_id.id
-                    break
-                if not child.type == 'delivery' and child.type == 'invoice' and child.commission_id:
-                    rec.commission_percent = child.commission_id.percentage
-                    rec.commision_id = child.commission_id.id
+            if rec.order_id.partner_shipping_id.commission_id:
+                commission_obj = rec.order_id.partner_shipping_id.commission_id
+            elif rec.order_id.partner_invoice_id.commission_id:
+                commission_obj = rec.order_id.partner_invoice_id.commission_id
+            else:
+                commission_obj = rec.order_id.partner_id.commission_id
+                
+            if commission_obj:
+                rec.commission_percent = commission_obj.percentage
+                rec.commision_id = commission_obj.id
+            else:
+                rec.commission_percent = 0
 
-        if not rec.order_id.partner_id.child_ids:
-            rec.commission_percent = rec.order_id.partner_id.commission_id.percentage
-            rec.commision_id = rec.order_id.partner_id.commission_id.id
 
     @api.depends('product_id', 'price_subtotal', 'order_id.partner_id')
     def get_commission_amount(self):
@@ -69,5 +91,37 @@ class SaleOrderLine(models.Model):
 class SalesCommission(models.Model):
     _name = 'sale.commision'
     _rec_name = 'code'
+
     code = fields.Char(string='Code')
     percentage = fields.Float(string='Percentage')
+    user_id = fields.Many2one('res.users', string='Salesperson')
+
+    
+class SaleOrder(models.Model):
+    _inherit = 'sale.order'
+
+    @api.onchange('partner_id','partner_invoice_id','partner_shipping_id')
+    def onchange_partner_address(self):
+        """
+        Update the salesperson when the partner, Invoice address, Delivery address are changed:
+        """
+        commission_obj = None
+        if self.partner_shipping_id.commission_id:
+            commission_obj = self.partner_shipping_id.commission_id
+        elif self.partner_invoice_id.commission_id:
+            commission_obj = self.partner_invoice_id.commission_id
+        else:
+            commission_obj = self.partner_id.commission_id
+
+
+        values = {}
+        user_id = commission_obj.user_id
+        if user_id:
+            values['user_id'] = user_id
+        else:
+            self.update({
+                'user_id': False,
+            })
+            return
+
+        self.update(values)

@@ -10,7 +10,8 @@
                     <sheet>
                         <group>
                             <group>
-                                <field name="code"/>
+                                <field name="code" widget="url"/>
+                                <field name="user_id"/>
                                 <field name="percentage"/>
                             </group>
                         </group>
@@ -26,6 +27,7 @@
             <field name="arch" type="xml">
                 <tree>
                     <field name="code"/>
+                    <field name="user_id"/>
                     <field name="percentage"/>
                 </tree>
             </field>
@@ -39,7 +41,7 @@
         </record>
 
         <menuitem id="commission_menu"
-                  name="Commision Codes"
+                  name="Commission Codes"
                   action="sale_commision_action"
                   parent="sale.menu_sale_config"
                   sequence="3"/>

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "Commission",
+    'name': "Commission_Syncoria",
     'summary': """
         Short (1 phrase/line) summary of the module's purpose, used as
         subtitle on modules listing or apps.openerp.com""",
@@ -20,7 +20,7 @@
         'views/commision_view.xml',
         'views/partner_view.xml',
         'views/commission_reporting.xml',
-        'views/sale_order_view.xml',
+        # 'views/sale_order_view.xml',
         'views/account_move_view.xml',
     ],
     'installable': True,
